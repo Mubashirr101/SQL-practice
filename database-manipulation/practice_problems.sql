@@ -28,3 +28,21 @@ GROUP BY
 ORDER BY
     posting_month;
 
+-- 3: CASE EXPRESSIONS
+-- categorize the salaries from each job posting to see if it fit a desired sal range
+-- put sal in diff buckets, define high low and mid sals as per own conditions
+-- only data analyst roles, highest to lowest
+
+SELECT avg(salary_year_avg) FROM job_postings_fact WHERE job_title_short = 'Data Analyst';
+
+SELECT 
+    COUNT(job_id) AS no_of_jobs,
+    CASE
+        WHEN salary_year_avg > '200000' THEN 'HIGH'
+        WHEN salary_year_avg < '70000' THEN 'LOW'
+        ELSE 'MID'
+    END AS sal_bucket
+FROM job_postings_fact
+WHERE job_title_short = 'Data Analyst'
+GROUP BY sal_bucket
+ORDER BY no_of_jobs DESC;
