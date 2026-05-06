@@ -46,3 +46,44 @@ FROM job_postings_fact
 WHERE job_title_short = 'Data Analyst'
 GROUP BY sal_bucket
 ORDER BY no_of_jobs DESC;
+
+-- 4: CTEs
+-- Identify the top 5 skills that are most frequently mentioned in job postings
+-- find skill id with highest counts in skills_job_dim & join this result with skills_dim table to get the skill names
+
+WITH top_skills AS (
+    SELECT COUNT(job_id) AS topskills,skill_id
+    FROM skills_job_dim
+    GROUP BY skill_id 
+    ORDER BY COUNT(job_id) DESC
+)
+
+SELECT skills_dim.skills, top_skills.topskills
+FROM skills_dim
+LEFT JOIN top_skills ON top_skills.skill_id = skills_dim.skill_id
+ORDER BY top_skills.topskills DESC
+LIMIT 5;
+
+-- 5: Subquery
+-- determin the size category (small,medium,large) for each company by first identifying the no. ofjobs postings they have.
+-- use subquery to calculate the total job postings per comany
+-- small if <10 postings, medium of postings between 10-50 & large if >50
+
+SELECT * FROM job_postings_fact LIMIT 10;
+
+SELECT 
+    company_dim.name , 
+    jobsaggset.total_jobs,
+    CASE
+        WHEN jobsaggset.total_jobs < 10 THEN 'Small'
+        WHEN jobsaggset.total_jobs BETWEEN 10 AND 50 THEN 'Medium'
+        WHEN jobsaggset.total_jobs > 50 THEN 'Large'
+        ELSE 'INVALID'
+    END AS size_category
+FROM (
+    SELECT COUNT(job_id) AS total_jobs, company_id
+    FROM job_postings_fact
+    GROUP BY company_id
+    ORDER BY total_jobs DESC
+) AS jobsaggset
+LEFT JOIN company_dim ON company_dim.company_id = jobsaggset.company_id;
