@@ -87,3 +87,88 @@ FROM (
     ORDER BY total_jobs DESC
 ) AS jobsaggset
 LEFT JOIN company_dim ON company_dim.company_id = jobsaggset.company_id;
+
+
+-- 6: Find the count of number of remote job postings for data analysts per skill
+--display the top 5 skills by their demand in remote jobs
+-- include skill id,name and count of postings requireing the skill
+
+WITH remote_jobs_skils AS  (
+    SELECT 
+        COUNT(skills_job_dim.job_id) AS no_of_jobs, 
+        skills_job_dim.skill_id
+    FROM skills_job_dim
+    INNER JOIN job_postings_fact ON job_postings_fact.job_id = skills_job_dim.job_id
+    WHERE 
+        job_postings_fact.job_work_from_home = True AND
+        job_postings_fact.job_title_short = 'Data Analyst'
+    GROUP BY skill_id
+) 
+
+SELECT 
+    remote_jobs_skils.skill_id,
+    skills_dim.skills,
+    remote_jobs_skils.no_of_jobs
+FROM remote_jobs_skils
+INNER JOIN skills_dim ON skills_dim.skill_id = remote_jobs_skils.skill_id
+ORDER BY remote_jobs_skils.no_of_jobs DESC
+LIMIT 5;
+
+-- 7: UNION and UNION ALL
+-- get corresponding skill & skill type for each job posting in q1 (jab feb mar)
+-- including those with and without any skills
+-- looks at the skills and type for each job in q1, having salary ?70k
+
+SELECT
+    jan_job_skills.job_id,
+    skills_dim.skills,
+    skills_dim.type,
+    jan_job_skills.salary_year_avg
+FROM (
+    SELECT
+        skills_job_dim.skill_id,
+        jan_jobs.job_id,
+        jan_jobs.salary_year_avg
+    FROM jan_jobs
+    LEFT JOIN skills_job_dim ON skills_job_dim.job_id = jan_jobs.job_id
+) AS jan_job_skills
+LEFT JOIN skills_dim ON skills_dim.skill_id = jan_job_skills.skill_id
+WHERE jan_job_skills.salary_year_avg > 70000
+
+
+UNION ALL
+
+SELECT
+    feb_job_skills.job_id,
+    skills_dim.skills,
+    skills_dim.type,
+    feb_job_skills.salary_year_avg
+FROM (
+    SELECT
+        skills_job_dim.skill_id,
+        feb_jobs.job_id,
+        feb_jobs.salary_year_avg
+    FROM feb_jobs
+    LEFT JOIN skills_job_dim ON skills_job_dim.job_id = feb_jobs.job_id
+) AS feb_job_skills
+LEFT JOIN skills_dim ON skills_dim.skill_id = feb_job_skills.skill_id
+WHERE feb_job_skills.salary_year_avg > 70000
+
+
+UNION ALL
+
+SELECT
+    mar_job_skills.job_id,
+    skills_dim.skills,
+    skills_dim.type,
+    mar_job_skills.salary_year_avg
+FROM (
+    SELECT
+        skills_job_dim.skill_id,
+        mar_jobs.job_id,
+        mar_jobs.salary_year_avg
+    FROM mar_jobs
+    LEFT JOIN skills_job_dim ON skills_job_dim.job_id = mar_jobs.job_id
+) AS mar_job_skills
+LEFT JOIN skills_dim ON skills_dim.skill_id = mar_job_skills.skill_id
+WHERE mar_job_skills.salary_year_avg > 70000
